@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventario de Ropa</title>
+  <style>
+    /* =====================
+       Diseño base y tema
+       ===================== */
+    :root{
+      --bg: #0b1020;
+      --panel: #121731;
+      --panel-2: #0e1330;
+      --text: #e9ecf1;
+      --muted: #a9b1c7;
+      --accent: #7c5cff;
+      --accent-2:#45d3ff;
+      --ok:#22c55e;
+      --ring: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+
+    .light{
+      --bg:#f6f7fb; 
+      --panel:#ffffff; 
+      --panel-2:#f4f5fb; 
+      --text:#141824; 
+      --muted:#576074; 
+      --accent:#6b4eff; 
+      --accent-2:#00b3ff;
+      --ok:#16a34a; 
+      --ring: 0 0 0 3px color-mix(in oklab, var(--accent) 20%, transparent);
+      --shadow: 0 10px 24px rgba(9,9,16,.12);
+    }
+
+    @media (prefers-color-scheme: light){
+      :root{ color-scheme: light; }
+      body:not(.force-dark){
+        background: var(--bg); color: var(--text);
+      }
+    }
+
+    *{ box-sizing: border-box }
+    html,body{ height: 100% }
+    body{
+      margin:0; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", "Apple Color Emoji","Segoe UI Emoji";
+    }
+    a{ color: inherit }
+
+    .container{ max-width: 1100px; margin-inline: auto; padding: 22px; }
+
+    /* Header */
+    .appbar{
+      position: sticky; top: 0; z-index: 20;
+      backdrop-filter: saturate(140%) blur(10px);
+      background: color-mix(in oklch, var(--bg) 85%, transparent);
+      border-bottom: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+    }
+    .appbar .inner{ display:flex; align-items:center; gap:14px; padding: 12px 22px; max-width: 1100px; margin: 0 auto; }
+    .logo{
+      display:flex; align-items:center; gap:10px; font-weight: 800; letter-spacing: .3px; font-size: 18px;
+    }
+    .logo .dot{ width:10px; height:10px; background: linear-gradient(135deg,var(--accent),var(--accent-2)); border-radius:50%; box-shadow: 0 0 0 6px color-mix(in oklab, var(--accent) 20%, transparent); }
+
+    .pill{
+      border:1px solid color-mix(in oklab, var(--text) 12%, transparent); background: var(--panel);
+      border-radius: 999px; padding: 8px 12px; display:flex; align-items:center; gap:10px; box-shadow: var(--shadow);
+    }
+    .search{ flex:1; }
+    .search input{
+      width:100%; background: transparent; color: var(--text); border:0; outline: none; font-size: 15px;
+    }
+
+    .controls{ display:flex; flex-wrap: wrap; gap:10px; align-items:center; }
+    .select, .toggle, .btn{
+      border:1px solid color-mix(in oklab, var(--text) 12%, transparent); background: var(--panel); color: var(--text);
+      border-radius: 12px; padding: 10px 12px; display:flex; align-items:center; gap:8px; cursor:pointer; box-shadow: var(--shadow);
+    }
+    select, option{ background: var(--panel); color: var(--text) }
+    .btn{ user-select:none }
+    .btn:focus-visible, .select:focus-within, .pill:focus-within{ box-shadow: var(--ring) }
+
+    .theme{ margin-left:auto }
+
+    /* Summary */
+    .summary{ display:flex; gap:14px; align-items:center; margin: 18px 0 8px }
+    .badge{ display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid color-mix(in oklab, var(--text) 14%, transparent); background: var(--panel-2); }
+
+    /* Grid */
+    .grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: 14px; }
+
+    .card{
+      background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 92%, transparent), var(--panel));
+      border:1px solid color-mix(in oklab, var(--text) 12%, transparent);
+      border-radius: var(--radius);
+      padding: 14px 14px 12px; box-shadow: var(--shadow);
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+      position: relative; overflow: clip;
+    }
+    .card:hover{ transform: translateY(-4px); border-color: color-mix(in oklab, var(--accent) 40%, transparent); box-shadow: 0 20px 40px rgba(0,0,0,.28); }
+
+    .card .title{ font-weight: 700; letter-spacing:.2px; }
+    .card .meta{ color: var(--muted); font-size: 12px; margin-top: 6px; display:flex; align-items:center; gap:8px; flex-wrap: wrap; }
+    .chip{ font-size:11px; padding:4px 8px; border-radius:999px; background: color-mix(in oklab, var(--accent) 18%, transparent); border:1px solid color-mix(in oklab, var(--accent) 40%, transparent); }
+    .chip.ok{ background: color-mix(in oklab, var(--ok) 18%, transparent); border-color: color-mix(in oklab, var(--ok) 40%, transparent); }
+
+    .owner{
+      position: sticky; top: 68px; z-index: 5; margin: 28px 0 10px; backdrop-filter: blur(6px) saturate(130%);
+    }
+    .owner .label{
+      display:flex; align-items: center; gap:10px; padding:10px 12px; border-radius: 14px; background: var(--panel); border:1px solid color-mix(in oklab, var(--text) 12%, transparent);
+      font-weight: 800; letter-spacing: .2px; box-shadow: var(--shadow);
+    }
+    .owner .count{ color: var(--muted); font-weight:600 }
+
+    /* Empty state */
+    .empty{ text-align:center; padding: 40px 20px; border:1px dashed color-mix(in oklab, var(--text) 18%, transparent); border-radius: 16px; background: var(--panel); }
+
+    /* Floating to top */
+    .to-top{ position: fixed; right: 18px; bottom: 18px; padding: 10px 12px; border-radius: 12px; border:1px solid color-mix(in oklab, var(--text) 12%, transparent); background: var(--panel); box-shadow: var(--shadow); cursor:pointer }
+
+    /* Print styles */
+    @media print{
+      .appbar, .controls, .to-top{ display:none }
+      body{ background: #fff; color:#000 }
+      .card{ break-inside: avoid }
+    }
+  </style>
+</head>
+<body>
+  <header class="appbar">
+    <div class="inner">
+      <div class="logo"><span class="dot"></span> Inventario de Ropa</div>
+      <div class="pill search" title="Buscar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21 21l-3.9-3.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.7"/></svg>
+        <input id="q" placeholder="Buscar prenda, color, tela…" autocomplete="off" />
+      </div>
+      <button id="theme" class="btn theme" title="Cambiar tema">🌓</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="controls" aria-label="Filtros y acciones">
+      <label class="select" title="Filtrar por persona">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-3.314 3.582-6 8-6s8 2.686 8 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <select id="byOwner">
+          <option value="">Todos</option>
+        </select>
+      </label>
+      <label class="toggle" title="Solo nuevos">
+        <input id="onlyNew" type="checkbox" style="appearance:none;width:0;height:0;margin:0;" />
+        <span>Solo “nuevo”</span>
+      </label>
+      <label class="select" title="Orden">
+        <select id="sort">
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+          <option value="owner">Por persona</option>
+        </select>
+      </label>
+      <button id="clear" class="btn" title="Limpiar filtros">Limpiar</button>
+      <button id="print" class="btn" title="Imprimir o guardar PDF">Imprimir / PDF</button>
+    </section>
+
+    <section class="summary" id="summary"></section>
+
+    <div id="list"></div>
+  </main>
+
+  <button class="to-top" id="toTop" title="Ir arriba">▲</button>
+
+  <script>
+    // ====================
+    // Datos (extraídos del archivo original)
+    // ====================
+    const data = [
+      // Brian Gauto
+      { owner:"Brian Gauto", title:"Top de lunares negros", nuevo:true },
+      { owner:"Brian Gauto", title:"Pollera hasta las rodillas color beige", nuevo:true },
+      { owner:"Brian Gauto", title:"Camisa de fibrana color blanco y marrón", nuevo:true },
+      { owner:"Brian Gauto", title:"Vestido de fibrana verde, marrón y blanco", nuevo:true },
+      { owner:"Brian Gauto", title:"Vestido de morley gris", nuevo:true },
+      { owner:"Brian Gauto", title:"Vestido de fibrana con temática de flora", nuevo:true },
+      { owner:"Brian Gauto", title:"Camisa fibrana flora", nuevo:true },
+      { owner:"Brian Gauto", title:"Bermuda jean azul", nuevo:true },
+      // Kevin Ramoa
+      { owner:"Kevin Ramoa", title:"Buzo blanco de friza con estampa en la espalda" },
+      { owner:"Kevin Ramoa", title:"Campera tejida de hilo blanco y rosa" },
+      { owner:"Kevin Ramoa", title:"Remera rosa manga blanca con estampa adelante color salmón", nuevo:true },
+      { owner:"Kevin Ramoa", title:"Camisa a cuadros roja, azul y blanca" },
+      // Lian Duarte
+      { owner:"Lian Duarte", title:"Bermuda blanca" },
+      { owner:"Lian Duarte", title:"Remera turquesa lisa, mangas cortas" },
+      { owner:"Lian Duarte", title:"Remera marrón con estampa Nike delantera, manga corta" },
+      { owner:"Lian Duarte", title:"Chomba gris" },
+      { owner:"Lian Duarte", title:"Buzo gris" },
+      { owner:"Lian Duarte", title:"Campera negra" },
+      // Azul
+      { owner:"Azul", title:"Remera gris de niña" },
+      { owner:"Azul", title:"Remera rosa de niña (1)" },
+      { owner:"Azul", title:"Remera rosa de niña (2)" },
+      { owner:"Azul", title:"Remera violeta de niña" },
+      { owner:"Azul", title:"Remera negra de niña" },
+      { owner:"Azul", title:"Remera marrón de niña (1)" },
+      { owner:"Azul", title:"Remera marrón de niña (2)" },
+      { owner:"Azul", title:"Short de jean de niña" },
+      // Daniela
+      { owner:"Daniela", title:"Blusa bordó con tacha" },
+      { owner:"Daniela", title:"Calza pescadora violeta" },
+      { owner:"Daniela", title:"Camisa celeste" },
+      { owner:"Daniela", title:"Camisa roja" },
+      { owner:"Daniela", title:"Blusa marrón" },
+      { owner:"Daniela", title:"Pareja de zapatos beige" },
+      // Yazmin Veloso
+      { owner:"Yazmin Veloso", title:"Remera negra" },
+      { owner:"Yazmin Veloso", title:"Top de flores" },
+      { owner:"Yazmin Veloso", title:"Short negro con tiritas" },
+      { owner:"Yazmin Veloso", title:"Short largo gris" },
+      { owner:"Yazmin Veloso", title:"Remeron verde claro" },
+      { owner:"Yazmin Veloso", title:"Remera amarilla con anclas" },
+      { owner:"Yazmin Veloso", title:"Calza corta negra" },
+      { owner:"Yazmin Veloso", title:"Remera azul" },
+      { owner:"Yazmin Veloso", title:"Remera rosada" },
+      { owner:"Yazmin Veloso", title:"Top con flores negro y blanco" },
+      { owner:"Yazmin Veloso", title:"Remeron negro" },
+      { owner:"Yazmin Veloso", title:"Jean" },
+      { owner:"Yazmin Veloso", title:"Conjunto pijama" },
+      { owner:"Yazmin Veloso", title:"Remeron violeta" },
+      { owner:"Yazmin Veloso", title:"Remera azul con estampa" },
+      { owner:"Yazmin Veloso", title:"Short" },
+      { owner:"Yazmin Veloso", title:"Remera blanca" },
+      { owner:"Yazmin Veloso", title:"Pantalón de lino" },
+      { owner:"Yazmin Veloso", title:"Pantalón violeta largo" },
+      { owner:"Yazmin Veloso", title:"Top azul con negro" },
+      { owner:"Yazmin Veloso", title:"Top de rayas blanco con naranja" },
+      { owner:"Yazmin Veloso", title:"Remera negra" },
+      { owner:"Yazmin Veloso", title:"Top negro" },
+      { owner:"Yazmin Veloso", title:"Jean de mujer" },
+      { owner:"Yazmin Veloso", title:"Remera negra" },
+      { owner:"Yazmin Veloso", title:"Saco verde" },
+      { owner:"Yazmin Veloso", title:"Top blanco" },
+      { owner:"Yazmin Veloso", title:"Calza blanca" },
+      { owner:"Yazmin Veloso", title:"Top rojo brilloso" },
+      { owner:"Yazmin Veloso", title:"Pollera negra" },
+      { owner:"Yazmin Veloso", title:"Top negro" },
+      { owner:"Yazmin Veloso", title:"Vestido con lunares de fibrana" },
+      // Camila Casani
+      { owner:"Camila Casani", title:"Bermuda azul / sin talle" },
+      { owner:"Camila Casani", title:"Pantalón de dama floreado / talle 3" },
+      { owner:"Camila Casani", title:"Jean azul de mujer / talle 42" },
+      { owner:"Camila Casani", title:"Jean azul de mujer / talle 40" },
+      { owner:"Camila Casani", title:"Jean celeste de mujer / talle 40" },
+      { owner:"Camila Casani", title:"Jean azul de mujer / talle 44" },
+      { owner:"Camila Casani", title:"Pantalón negro capri / talle 2" },
+      { owner:"Camila Casani", title:"Remera marrón con estampa adelante / sin talle" },
+      { owner:"Camila Casani", title:"Remera con rayas celeste, mostaza y blanco / talle M" },
+      { owner:"Camila Casani", title:"Short deportivo / sin talle" },
+      { owner:"Camila Casani", title:"Bermuda de mujer floreado / talle L/XL" },
+    ];
+
+    // ====================
+    // Estado + UI
+    // ====================
+    const $ = s => document.querySelector(s);
+    const list = $('#list');
+    const summary = $('#summary');
+
+    const q = $('#q');
+    const byOwner = $('#byOwner');
+    const onlyNew = $('#onlyNew');
+    const sort = $('#sort');
+
+    const owners = [...new Set(data.map(i => i.owner))].sort();
+    owners.forEach(o => {
+      const opt = document.createElement('option'); opt.value = o; opt.textContent = o; byOwner.appendChild(opt);
+    });
+
+    function normalize(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+    function applyFilters(){
+      let items = data.slice();
+      const nq = normalize(q.value);
+      if (nq) items = items.filter(i => normalize(i.title + ' ' + i.owner).includes(nq));
+      if (byOwner.value) items = items.filter(i => i.owner === byOwner.value);
+      if (onlyNew.checked) items = items.filter(i => i.nuevo);
+
+      // Orden
+      if (sort.value === 'az') items.sort((a,b)=> a.title.localeCompare(b.title,'es'));
+      if (sort.value === 'za') items.sort((a,b)=> b.title.localeCompare(a.title,'es'));
+      if (sort.value === 'owner') items.sort((a,b)=> (a.owner.localeCompare(b.owner,'es')) || a.title.localeCompare(b.title,'es'));
+
+      render(items);
+    }
+
+    function render(items){
+      // Resumen
+      const total = items.length;
+      const nuevos = items.filter(i=>i.nuevo).length;
+      summary.innerHTML = `
+        <span class="badge">Total: <strong>${total}</strong></span>
+        <span class="badge">Nuevos: <strong>${nuevos}</strong></span>
+        <span class="badge">Personas: <strong>${owners.length}</strong></span>
+      `;
+
+      if (!items.length){
+        list.innerHTML = `<div class="empty">No se encontraron resultados con los filtros actuales.</div>`; return;
+      }
+
+      // Agrupar por owner manteniendo orden seleccionado
+      const groups = {};
+      items.forEach(i => { (groups[i.owner] ||= []).push(i); });
+      const order = Object.keys(groups).sort((a,b)=> a.localeCompare(b,'es'));
+
+      list.innerHTML = order.map(owner => {
+        const g = groups[owner];
+        const cards = g.map(i => `
+          <article class="card" tabindex="0" aria-label="${i.title}">
+            <div class="title">${i.title}</div>
+            <div class="meta">
+              <span class="chip">${owner}</span>
+              ${i.nuevo ? '<span class="chip ok">nuevo</span>' : ''}
+            </div>
+          </article>
+        `).join('');
+        return `
+          <section class="owner" id="${owner.replace(/\s+/g,'-')}">
+            <div class="label">${owner} <span class="count">· ${g.length}</span></div>
+          </section>
+          <div class="grid">${cards}</div>
+        `;
+      }).join('');
+    }
+
+    // Eventos
+    [q, byOwner, onlyNew, sort].forEach(el => el.addEventListener('input', applyFilters));
+    document.getElementById('clear').addEventListener('click', () => { q.value=''; byOwner.value=''; onlyNew.checked=false; sort.value='az'; applyFilters(); q.focus(); });
+    document.getElementById('print').addEventListener('click', ()=> window.print());
+
+    // Tema (dark/light con persistencia)
+    const themeBtn = document.getElementById('theme');
+    const THEME_KEY = 'inventory:theme';
+    function setTheme(mode){
+      if (mode === 'light'){ document.body.classList.add('light'); } else { document.body.classList.remove('light'); }
+      localStorage.setItem(THEME_KEY, mode);
+    }
+    const saved = localStorage.getItem(THEME_KEY) || 'dark';
+    setTheme(saved);
+    themeBtn.addEventListener('click', ()=> setTheme(document.body.classList.contains('light') ? 'dark' : 'light'));
+
+    // To top
+    const toTop = document.getElementById('toTop');
+    toTop.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+
+    // Primera renderización
+    applyFilters();
+  </script>
+</body>
+</html>
